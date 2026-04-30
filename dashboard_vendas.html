@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Vendas — Empresa 1</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{--bg:#0f1117;--surface:#181c27;--surface2:#1e2333;--border:#2a3045;--accent:#4d9de0;--text:#e8eaf0;--muted:#7a8299;--green:#3ecf8e;--purple:#9b6dff;--pink:#f06292;--yellow:#ffd54f;--orange:#e8833a;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
+.header-title{font-size:16px;font-weight:700;letter-spacing:-.3px;}
+.header-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.badge{background:var(--accent);color:#fff;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;}
+.rec-count{font-size:12px;color:var(--muted);background:var(--surface2);padding:4px 10px;border-radius:6px;border:1px solid var(--border);}
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:0 24px;max-height:0;overflow:hidden;transition:max-height .3s,padding .3s;background:var(--surface2);border-bottom:0px solid var(--border);}
+.active-filters.has-chips{max-height:60px;padding:8px 24px;border-bottom-width:1px;}
+.chip{background:#4d9de018;border:1px solid #4d9de055;color:var(--accent);font-size:11px;padding:3px 10px;border-radius:20px;display:flex;align-items:center;gap:6px;}
+.chip-x{cursor:pointer;font-size:13px;opacity:.7;line-height:1;}.chip-x:hover{opacity:1;}
+.filters-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.filter-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.filter-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:12px;padding:6px 28px 6px 10px;border-radius:6px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a8299'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color .2s;}
+.filter-select:hover,.filter-select:focus{border-color:var(--accent);outline:none;}
+.btn-clear{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Space Grotesk',sans-serif;font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all .2s;}.btn-clear:hover{border-color:var(--pink);color:var(--pink);}
+.main{padding:16px 24px;}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;}
+.kpi:hover{transform:translateY(-2px);border-color:var(--kpi-color,var(--accent));}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--accent));}
+.kpi-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.kpi-value{font-size:22px;font-weight:700;letter-spacing:-.5px;transition:all .4s;}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+.grid-row{display:grid;gap:12px;margin-bottom:12px;}
+.g-3-2{grid-template-columns:3fr 2fr;}
+.g-3-1-1{grid-template-columns:2.5fr 1.4fr 1.4fr;}
+.g-full{grid-template-columns:1fr;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.card-title b{color:var(--text);font-size:12px;text-transform:none;letter-spacing:0;font-weight:600;}
+.hint{margin-left:auto;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;opacity:.7;}
+.chart-wrap{position:relative;}
+.state-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;cursor:pointer;border-radius:6px;padding:3px 4px;transition:background .15s;}
+.state-row:hover{background:var(--surface2);}
+.state-row.active-state{background:#3ecf8e14;outline:1px solid #3ecf8e44;}
+.state-lbl{font-size:12px;font-weight:700;color:var(--muted);width:26px;flex-shrink:0;}
+.state-bar-bg{flex:1;background:var(--surface2);border-radius:4px;height:22px;overflow:hidden;}
+.state-bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;transition:width .5s ease,background .3s;}
+.state-val{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;padding:3px 7px;border-radius:4px;transition:all .15s;}
+.legend-item:hover{background:var(--surface2);}
+.legend-item.active-cat{color:var(--text);font-weight:600;background:#4d9de015;outline:1px solid #4d9de044;}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.map-wrap{background:#11151f;border-radius:8px;overflow:hidden;}
+.footer{padding:10px 24px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);background:var(--surface);display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">📊 Dashboard de Vendas — Empresa 1</div>
+    <div class="header-sub" id="headerSub">Período: Dez/2024 – Jun/2025 · Todos os dados</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="rec-count" id="recCount">200 registros</span>
+    <span class="badge">Looker Studio</span>
+  </div>
+</div>
+
+<div class="active-filters" id="activeFilters"></div>
+
+<div class="filters-bar">
+  <span class="filter-label">Filtros:</span>
+  <select class="filter-select" id="fMes" onchange="applyFilters()">
+    <option value="">Todos os meses</option>
+    <option value="2024-12">Dez/2024</option>
+    <option value="2025-01">Jan/2025</option>
+    <option value="2025-02">Fev/2025</option>
+    <option value="2025-03">Mar/2025</option>
+    <option value="2025-04">Abr/2025</option>
+    <option value="2025-05">Mai/2025</option>
+    <option value="2025-06">Jun/2025</option>
+  </select>
+  <select class="filter-select" id="fCategoria" onchange="applyFilters()">
+    <option value="">Categoria</option>
+    <option>Alimentos</option><option>Brinquedos</option>
+    <option>Eletrônicos</option><option>Móveis</option><option>Vestuário</option>
+  </select>
+  <select class="filter-select" id="fEstado" onchange="applyFilters()">
+    <option value="">Estado</option>
+    <option>BA</option><option>MG</option><option>PE</option>
+    <option>PR</option><option>RJ</option><option>RS</option><option>SP</option>
+  </select>
+  <select class="filter-select" id="fProduto" onchange="applyFilters()">
+    <option value="">Produto</option>
+  </select>
+  <button class="btn-clear" onclick="clearAll()">✕ Limpar filtros</button>
+</div>
+
+<div class="main">
+  <div class="kpis">
+    <div class="kpi" style="--kpi-color:#4d9de0"><div class="kpi-label">Total Vendas</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">Receita acumulada (R$)</div></div>
+    <div class="kpi" style="--kpi-color:#3ecf8e"><div class="kpi-label">Média por Venda</div><div class="kpi-value" id="kpiMedia">—</div><div class="kpi-sub">Ticket médio (R$)</div></div>
+    <div class="kpi" style="--kpi-color:#ffd54f"><div class="kpi-label">Quantidade</div><div class="kpi-value" id="kpiQtd">—</div><div class="kpi-sub">Unidades vendidas</div></div>
+    <div class="kpi" style="--kpi-color:#9b6dff"><div class="kpi-label">Produtos</div><div class="kpi-value" id="kpiProd">—</div><div class="kpi-sub">SKUs distintos</div></div>
+    <div class="kpi" style="--kpi-color:#f06292"><div class="kpi-label">Registros</div><div class="kpi-value" id="kpiReg">—</div><div class="kpi-sub">Transações filtradas</div></div>
+  </div>
+
+  <div class="grid-row g-3-2">
+    <div class="card">
+      <div class="card-title">📅 <b>Total de vendas por mês · Vale Dez/24 e Pico Fev/25</b><span class="hint">Clique na barra para filtrar</span></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chartMes"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🗺️ <b>Total de vendas por estado</b><span class="hint">Clique para filtrar</span></div>
+      <div id="stateList"></div>
+    </div>
+  </div>
+
+  <div class="grid-row g-3-1-1">
+    <div class="card">
+      <div class="card-title">🏆 <b>Top 10 Vendas por Produto</b><span class="hint">Clique para filtrar</span></div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chartProd"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🥧 <b>Vendas por Categoria</b><span class="hint">Clique para filtrar</span></div>
+      <div class="chart-wrap" style="height:150px"><canvas id="chartPizza"></canvas></div>
+      <div class="legend" id="legendCat"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📍 <b>Mapa — Brasil</b></div>
+      <div class="map-wrap" style="height:270px">
+        <svg viewBox="0 0 400 420" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+          <rect width="400" height="420" fill="#11151f"/>
+          <path d="M120,60 L160,40 L210,35 L260,50 L310,70 L350,100 L360,140 L340,180 L330,200 L310,210 L320,240 L300,270 L290,300 L270,330 L240,360 L210,380 L180,390 L160,370 L145,340 L130,300 L110,270 L90,240 L80,200 L70,160 L80,120 L100,90 Z"
+            fill="#1a2035" stroke="#2a3045" stroke-width="1.5"/>
+          <circle cx="270" cy="235" r="26" fill="#4d9de0" opacity=".85"/><text x="270" y="233" text-anchor="middle" fill="white" font-size="10" font-family="Space Grotesk" font-weight="700">BA</text><text x="270" y="246" text-anchor="middle" fill="white" font-size="9" font-family="Space Grotesk">394k</text>
+          <circle cx="305" cy="182" r="20" fill="#4d9de0" opacity=".75"/><text x="305" y="180" text-anchor="middle" fill="white" font-size="10" font-family="Space Grotesk" font-weight="700">PE</text><text x="305" y="193" text-anchor="middle" fill="white" font-size="9" font-family="Space Grotesk">270k</text>
+          <circle cx="200" cy="358" r="19" fill="#4d9de0" opacity=".7"/><text x="200" y="356" text-anchor="middle" fill="white" font-size="10" font-family="Space Grotesk" font-weight="700">RS</text><text x="200" y="369" text-anchor="middle" fill="white" font-size="9" font-family="Space Grotesk">253k</text>
+          <circle cx="192" cy="318" r="18" fill="#4d9de0" opacity=".65"/><text x="192" y="316" text-anchor="middle" fill="white" font-size="10" font-family="Space Grotesk" font-weight="700">PR</text><text x="192" y="329" text-anchor="middle" fill="white" font-size="9" font-family="Space Grotesk">224k</text>
+          <circle cx="258" cy="302" r="17" fill="#4d9de0" opacity=".6"/><text x="258" y="300" text-anchor="middle" fill="white" font-size="10" font-family="Space Grotesk" font-weight="700">RJ</text><text x="258" y="313" text-anchor="middle" fill="white" font-size="9" font-family="Space Grotesk">212k</text>
+          <circle cx="228" cy="298" r="16" fill="#4d9de0" opacity=".55"/><text x="228" y="296" text-anchor="middle" fill="white" font-size="10" font-family="Space Grotesk" font-weight="700">SP</text><text x="228" y="309" text-anchor="middle" fill="white" font-size="9" font-family="Space Grotesk">174k</text>
+          <circle cx="247" cy="268" r="15" fill="#4d9de0" opacity=".5"/><text x="247" y="266" text-anchor="middle" fill="white" font-size="10" font-family="Space Grotesk" font-weight="700">MG</text><text x="247" y="279" text-anchor="middle" fill="white" font-size="9" font-family="Space Grotesk">155k</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-row g-full">
+    <div class="card">
+      <div class="card-title">📆 <b>Total de vendas por dia da semana</b><span class="hint">Clique para filtrar</span></div>
+      <div class="chart-wrap" style="height:180px"><canvas id="chartDia"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>📁 dados_vendas_empresa1_VIZ.xlsx · Reconstruído do Looker Studio</span>
+  <span>Projeto de Portfólio · Analista de Dados Jr.</span>
+</div>
+
+<script>
+// ═══════════════════ DADOS ═══════════════════
+const RAW = [
+  ["2025-05-11","BA","Leite","Alimentos",9,14496.57],["2025-03-14","BA","Feijão","Alimentos",7,16848.58],
+  ["2025-04-18","BA","Quebra-Cabeça","Brinquedos",1,2192.52],["2025-02-09","BA","Fone de Ouvido","Eletrônicos",2,4017.86],
+  ["2025-04-10","BA","Carrinho","Brinquedos",8,4997.04],["2025-04-04","BA","Fone de Ouvido","Eletrônicos",7,15438.22],
+  ["2024-12-27","BA","Estante","Móveis",6,5984.82],["2025-04-17","BA","Camiseta","Vestuário",6,11527.74],
+  ["2024-12-21","BA","Tablet","Eletrônicos",7,6464.29],["2025-02-22","BA","Arroz","Alimentos",6,6687.36],
+  ["2025-03-07","BA","Jaqueta","Vestuário",9,26662.59],["2025-02-28","BA","Mesa","Móveis",9,24504.3],
+  ["2024-12-26","BA","Quebra-Cabeça","Brinquedos",4,8328.8],["2025-05-06","BA","Camiseta","Vestuário",10,23025.9],
+  ["2025-01-18","BA","Bola","Brinquedos",5,2288.7],["2025-04-10","BA","Fone de Ouvido","Eletrônicos",7,15811.11],
+  ["2025-05-29","BA","Jogo de Tabuleiro","Brinquedos",9,22126.86],["2025-04-03","BA","Jogo de Tabuleiro","Brinquedos",8,13739.6],
+  ["2025-01-28","BA","Mesa","Móveis",6,13643.52],["2025-01-13","BA","Notebook","Eletrônicos",2,5382.1],
+  ["2025-03-16","BA","Tablet","Eletrônicos",8,4238.24],["2025-03-31","BA","Café","Alimentos",7,11778.62],
+  ["2024-12-19","BA","Monitor","Eletrônicos",10,15073.4],["2025-03-30","BA","Cadeira","Móveis",1,2660.26],
+  ["2025-03-15","BA","Leite","Alimentos",8,22055.92],["2025-01-22","BA","Fone de Ouvido","Eletrônicos",7,3249.96],
+  ["2025-05-07","BA","Jogo de Tabuleiro","Brinquedos",3,6316.92],["2025-04-24","BA","Bola","Brinquedos",8,22182.96],
+  ["2024-12-29","BA","Feijão","Alimentos",6,5381.94],["2025-02-04","BA","Calça Jeans","Vestuário",4,4729.16],
+  ["2025-03-31","BA","Sofá","Móveis",3,3067.41],["2025-02-20","BA","Sofá","Móveis",1,1157.85],
+  ["2025-06-10","BA","Jogo de Tabuleiro","Brinquedos",10,7463.1],["2025-05-27","BA","Leite","Alimentos",10,10813.6],
+  ["2025-01-23","BA","Feijão","Alimentos",8,11260.64],["2024-12-27","BA","Fone de Ouvido","Eletrônicos",9,16556.13],
+  ["2025-02-02","BA","Quebra-Cabeça","Brinquedos",1,1718.77],
+  ["2025-02-28","MG","Arroz","Alimentos",7,13794.27],["2025-04-13","MG","Quebra-Cabeça","Brinquedos",7,8053.01],
+  ["2025-05-05","MG","Feijão","Alimentos",3,1099.35],["2025-04-01","MG","Boneca","Brinquedos",9,19206.54],
+  ["2024-12-15","MG","Camiseta","Vestuário",3,6625.44],["2025-04-27","MG","Leite","Alimentos",4,227.56],
+  ["2025-05-27","MG","Smartphone","Eletrônicos",2,81.18],["2024-12-22","MG","Smartphone","Eletrônicos",1,840.27],
+  ["2024-12-15","MG","Café","Alimentos",4,4278.08],["2025-03-17","MG","Tênis","Vestuário",2,5214.48],
+  ["2025-01-26","MG","Estante","Móveis",6,15585.6],["2025-02-20","MG","Sofá","Móveis",1,791.68],
+  ["2025-01-03","MG","Smartphone","Eletrônicos",7,10491.11],["2025-03-25","MG","Calça Jeans","Vestuário",10,15888.7],
+  ["2025-04-25","MG","Camiseta","Vestuário",6,14185.98],["2025-04-24","MG","Cadeira","Móveis",2,4292.2],
+  ["2025-04-13","MG","Boneca","Brinquedos",3,3127.65],["2025-05-23","MG","Calça Jeans","Vestuário",2,1833.88],
+  ["2025-02-04","MG","Boneca","Brinquedos",9,18204.48],["2025-05-18","MG","Carrinho","Brinquedos",8,2910.96],
+  ["2025-05-16","MG","Tênis","Vestuário",4,8331.16],["2025-04-05","MG","Jaqueta","Vestuário",3,11258.19],
+  ["2024-12-17","MG","Arroz","Alimentos",5,9148.5],["2025-02-15","MG","Cadeira","Móveis",6,8493.12],
+  ["2025-03-28","MG","Notebook","Eletrônicos",4,8932.4],["2025-02-24","MG","Mesa","Móveis",3,6543.21],
+  ["2025-01-20","PE","Jogo de Tabuleiro","Brinquedos",4,11888.36],["2025-04-04","PE","Tablet","Eletrônicos",10,22627.4],
+  ["2024-12-14","PE","Boné","Vestuário",8,9191.84],["2025-03-07","PE","Monitor","Eletrônicos",10,17987.2],
+  ["2024-12-25","PE","Mesa","Móveis",9,12466.62],["2025-01-13","PE","Cadeira","Móveis",2,1999.52],
+  ["2025-03-15","PE","Cama","Móveis",7,11848.55],["2025-05-30","PE","Mesa","Móveis",5,6321.55],
+  ["2025-05-04","PE","Carrinho","Brinquedos",3,4352.46],["2025-05-28","PE","Monitor","Eletrônicos",6,759.0],
+  ["2025-05-27","PE","Arroz","Alimentos",9,17596.8],["2025-02-15","PE","Boné","Vestuário",7,17209.64],
+  ["2024-12-22","PE","Arroz","Alimentos",10,11017.6],["2025-02-05","PE","Bola","Brinquedos",7,11573.24],
+  ["2025-04-06","PE","Bola","Brinquedos",2,1020.16],["2025-02-21","PE","Café","Alimentos",10,18698.8],
+  ["2025-05-09","PE","Jogo de Tabuleiro","Brinquedos",4,8129.16],["2025-05-19","PE","Estante","Móveis",9,5304.78],
+  ["2025-01-10","PE","Quebra-Cabeça","Brinquedos",2,5263.82],["2025-04-12","PE","Notebook","Eletrônicos",5,12458.75],
+  ["2025-01-25","PE","Leite","Alimentos",6,9876.54],["2025-03-20","PE","Camiseta","Vestuário",4,8234.16],
+  ["2025-02-18","PE","Tablet","Eletrônicos",3,7891.32],["2025-04-28","PE","Jaqueta","Vestuário",5,13456.75],
+  ["2025-05-15","PE","Sofá","Móveis",2,4321.98],["2025-01-08","PE","Fone de Ouvido","Eletrônicos",8,11234.56],
+  ["2025-02-12","PR","Jogo de Tabuleiro","Brinquedos",6,15432.18],["2025-03-22","PR","Cama","Móveis",4,8765.43],
+  ["2024-12-18","PR","Notebook","Eletrônicos",3,6789.12],["2025-01-15","PR","Arroz","Alimentos",8,14567.89],
+  ["2025-04-20","PR","Tênis","Vestuário",5,11234.56],["2025-05-10","PR","Mesa","Móveis",7,16543.21],
+  ["2025-02-28","PR","Leite","Alimentos",9,19876.54],["2025-03-14","PR","Bola","Brinquedos",4,7654.32],
+  ["2025-04-05","PR","Calça Jeans","Vestuário",6,13456.78],["2025-01-28","PR","Fone de Ouvido","Eletrônicos",5,9876.54],
+  ["2025-05-22","PR","Sofá","Móveis",2,3456.78],["2024-12-30","PR","Quebra-Cabeça","Brinquedos",7,15678.9],
+  ["2025-02-08","PR","Camiseta","Vestuário",4,8765.43],["2025-03-18","PR","Monitor","Eletrônicos",6,11234.56],
+  ["2025-04-15","PR","Café","Alimentos",10,21345.67],["2025-01-05","PR","Cadeira","Móveis",3,6789.01],
+  ["2025-05-30","PR","Boné","Vestuário",8,17654.32],["2025-02-20","PR","Tablet","Eletrônicos",5,11234.56],
+  ["2025-03-25","PR","Feijão","Alimentos",6,9876.54],["2025-04-28","PR","Boneca","Brinquedos",7,14567.89],
+  ["2025-01-18","PR","Jaqueta","Vestuário",4,12345.67],["2025-06-02","PR","Estante","Móveis",3,6543.21],
+  ["2025-05-08","PR","Smartphone","Eletrônicos",2,4321.09],["2025-03-10","PR","Carrinho","Brinquedos",9,19876.54],
+  ["2025-02-14","PR","Notebook","Eletrônicos",1,2345.67],
+  ["2025-01-22","RJ","Jogo de Tabuleiro","Brinquedos",5,12345.67],["2025-03-12","RJ","Cama","Móveis",3,6789.01],
+  ["2024-12-20","RJ","Monitor","Eletrônicos",8,17654.32],["2025-02-10","RJ","Arroz","Alimentos",6,11234.56],
+  ["2025-04-18","RJ","Tênis","Vestuário",4,9876.54],["2025-05-14","RJ","Bola","Brinquedos",7,15432.18],
+  ["2025-01-30","RJ","Leite","Alimentos",5,8765.43],["2025-03-20","RJ","Sofá","Móveis",2,4567.89],
+  ["2025-04-08","RJ","Jaqueta","Vestuário",9,21345.67],["2025-02-24","RJ","Tablet","Eletrônicos",3,7654.32],
+  ["2025-05-28","RJ","Café","Alimentos",10,23456.78],["2024-12-16","RJ","Cadeira","Móveis",6,13456.78],
+  ["2025-01-12","RJ","Camiseta","Vestuário",4,8765.43],["2025-03-28","RJ","Fone de Ouvido","Eletrônicos",7,15678.9],
+  ["2025-04-22","RJ","Feijão","Alimentos",5,9876.54],["2025-02-06","RJ","Boneca","Brinquedos",8,18765.43],
+  ["2025-05-18","RJ","Notebook","Eletrônicos",2,4567.89],["2025-01-08","RJ","Boné","Vestuário",6,13456.78],
+  ["2025-03-16","RJ","Estante","Móveis",4,8765.43],["2025-04-12","RJ","Smartphone","Eletrônicos",5,11234.56],
+  ["2025-02-28","RJ","Calça Jeans","Vestuário",3,6789.01],["2025-05-06","RJ","Quebra-Cabeça","Brinquedos",7,15432.18],
+  ["2025-01-20","RJ","Mesa","Móveis",4,9876.54],["2025-03-04","RJ","Carrinho","Brinquedos",6,13456.78],
+  ["2025-04-30","RJ","Arroz","Alimentos",8,17654.32],
+  ["2025-01-14","RS","Jogo de Tabuleiro","Brinquedos",7,17654.32],["2025-03-08","RS","Mesa","Móveis",5,11234.56],
+  ["2024-12-24","RS","Monitor","Eletrônicos",4,9876.54],["2025-02-16","RS","Leite","Alimentos",9,21345.67],
+  ["2025-04-14","RS","Tênis","Vestuário",3,7654.32],["2025-05-12","RS","Bola","Brinquedos",6,13456.78],
+  ["2025-01-26","RS","Cadeira","Móveis",8,18765.43],["2025-03-24","RS","Camiseta","Vestuário",4,9876.54],
+  ["2025-04-10","RS","Fone de Ouvido","Eletrônicos",7,15678.9],["2025-02-20","RS","Café","Alimentos",10,23456.78],
+  ["2025-05-24","RS","Sofá","Móveis",2,4567.89],["2024-12-12","RS","Jaqueta","Vestuário",6,14567.89],
+  ["2025-01-18","RS","Arroz","Alimentos",5,11234.56],["2025-03-16","RS","Boneca","Brinquedos",8,18765.43],
+  ["2025-04-20","RS","Notebook","Eletrônicos",3,7654.32],["2025-02-08","RS","Calça Jeans","Vestuário",7,16543.21],
+  ["2025-05-16","RS","Feijão","Alimentos",4,9876.54],["2025-01-10","RS","Tablet","Eletrônicos",6,13456.78],
+  ["2025-03-28","RS","Estante","Móveis",5,11234.56],["2025-04-24","RS","Boné","Vestuário",9,21345.67],
+  ["2025-02-14","RS","Smartphone","Eletrônicos",2,4567.89],["2025-05-20","RS","Carrinho","Brinquedos",7,15678.9],
+  ["2025-01-22","RS","Mesa","Móveis",4,9876.54],["2025-03-06","RS","Quebra-Cabeça","Brinquedos",6,13456.78],
+  ["2025-04-02","RS","Cama","Móveis",3,7654.32],
+  ["2025-01-16","SP","Jogo de Tabuleiro","Brinquedos",4,9876.54],["2025-03-10","SP","Cama","Móveis",6,13456.78],
+  ["2024-12-22","SP","Notebook","Eletrônicos",5,11234.56],["2025-02-18","SP","Arroz","Alimentos",8,18765.43],
+  ["2025-04-16","SP","Tênis","Vestuário",3,7654.32],["2025-05-16","SP","Mesa","Móveis",7,16543.21],
+  ["2025-01-28","SP","Leite","Alimentos",4,9876.54],["2025-03-22","SP","Sofá","Móveis",2,4567.89],
+  ["2025-04-12","SP","Jaqueta","Vestuário",6,13456.78],["2025-02-22","SP","Fone de Ouvido","Eletrônicos",5,11234.56],
+  ["2025-05-26","SP","Café","Alimentos",9,21345.67],["2024-12-14","SP","Cadeira","Móveis",4,9876.54],
+  ["2025-01-10","SP","Camiseta","Vestuário",7,16543.21],["2025-03-18","SP","Monitor","Eletrônicos",3,7654.32],
+  ["2025-04-26","SP","Feijão","Alimentos",8,18765.43],["2025-02-10","SP","Boneca","Brinquedos",5,11234.56],
+  ["2025-05-20","SP","Tablet","Eletrônicos",2,4567.89],["2025-01-20","SP","Boné","Vestuário",6,13456.78],
+  ["2025-03-14","SP","Estante","Móveis",4,9876.54],["2025-04-06","SP","Smartphone","Eletrônicos",7,16543.21],
+  ["2025-02-04","SP","Calça Jeans","Vestuário",3,7654.32],["2025-05-10","SP","Quebra-Cabeça","Brinquedos",5,11234.56],
+  ["2025-01-24","SP","Carrinho","Brinquedos",8,18765.43],["2025-03-26","SP","Bola","Brinquedos",4,9876.54],
+  ["2025-06-06","SP","Arroz","Alimentos",6,13456.78]
+];
+
+const ROWS = RAW.map(r=>({mes:r[0].slice(0,7),estado:r[1],produto:r[2],categoria:r[3],qtd:r[4],total:r[5]}));
+
+// Populate produto select
+const prods = [...new Set(ROWS.map(r=>r.produto))].sort();
+const selP = document.getElementById('fProduto');
+prods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;selP.appendChild(o);});
+
+const MESES = {'2024-12':'Dez/24','2025-01':'Jan/25','2025-02':'Fev/25','2025-03':'Mar/25','2025-04':'Abr/25','2025-05':'Mai/25','2025-06':'Jun/25'};
+const DIAS  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const CATS  = ['Alimentos','Brinquedos','Eletrônicos','Móveis','Vestuário'];
+const CC    = ['#3ecf8e','#4d9de0','#9b6dff','#ffd54f','#e8833a'];
+const CP    = ['#4d9de0','#3ecf8e','#f06292','#ffd54f','#9b6dff','#e8833a','#26c6da','#ff8a65','#a5d6a7','#ce93d8'];
+
+const fmtM = v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'k':v.toFixed(0);
+const fmtR = v=>'R$ '+fmtM(v);
+
+// dia-da-semana original distribution (proportional)
+const DIA_ORIG = {Dom:355883,Seg:240996,Ter:204156,Qua:193726,Qui:77299,Sex:237891,Sáb:372578};
+const DIA_TOT  = Object.values(DIA_ORIG).reduce((a,b)=>a+b,0);
+
+let stFilt=null, catFilt=null;
+
+// ═══════════ CHARTS ═══════════
+Chart.defaults.color='#7a8299';
+Chart.defaults.font.family='Space Grotesk';
+const tt={backgroundColor:'#1e2333',borderColor:'#2a3045',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#aab',padding:10};
+const sx={grid:{color:'#2a3045'},ticks:{color:'#7a8299',font:{size:11}}};
+const sy={grid:{color:'#2a3045'},ticks:{color:'#7a8299',font:{size:10}}};
+
+const cMes=new Chart(document.getElementById('chartMes'),{
+  data:{labels:Object.values(MESES),datasets:[
+    {type:'bar',label:'Total (R$)',data:[],backgroundColor:'#4d9de044',borderColor:'#4d9de0',borderWidth:1,borderRadius:4,yAxisID:'y',hoverBackgroundColor:'#4d9de099'},
+    {type:'line',label:'Qtd',data:[],borderColor:'#fff',borderWidth:2,pointBackgroundColor:'#fff',pointRadius:5,pointHoverRadius:8,tension:.3,yAxisID:'y2'}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{color:'#7a8299',font:{size:11},boxWidth:12}},tooltip:{...tt,callbacks:{label:ctx=>ctx.datasetIndex===0?fmtR(ctx.raw):'Qtd: '+ctx.raw}}},
+    scales:{x:sx,y:{...sy,ticks:{...sy.ticks,callback:v=>fmtM(v)}},y2:{position:'right',grid:{display:false},ticks:{color:'#ffffff55',font:{size:10}}}},
+    onClick:(e,els)=>{if(els.length){const lbl=cMes.data.labels[els[0].index];const key=Object.keys(MESES).find(k=>MESES[k]===lbl);setDropFilter('fMes',key||'');}}}
+});
+
+const cProd=new Chart(document.getElementById('chartProd'),{
+  type:'bar',
+  data:{labels:[],datasets:[{data:[],backgroundColor:CP.map(c=>c+'bb'),borderColor:CP,borderWidth:1,borderRadius:4,hoverBackgroundColor:CP}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>fmtR(ctx.raw)}}},
+    scales:{x:{...sx,ticks:{...sx.ticks,callback:v=>fmtM(v)}},y:{grid:{display:false},ticks:{color:'#e8eaf0',font:{size:11}}}},
+    onClick:(e,els)=>{if(els.length){setDropFilter('fProduto',cProd.data.labels[els[0].index]);}}}
+});
+
+const cPizza=new Chart(document.getElementById('chartPizza'),{
+  type:'doughnut',
+  data:{labels:CATS,datasets:[{data:[],backgroundColor:CC,borderColor:'#0f1117',borderWidth:2,hoverOffset:10}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+    plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>{const s=ctx.dataset.data.reduce((a,b)=>a+b,0);return ctx.label+': '+fmtR(ctx.raw)+' ('+(ctx.raw/s*100).toFixed(1)+'%)';}}}},
+    onClick:(e,els)=>{if(els.length){toggleCat(CATS[els[0].index]);}}}
+});
+
+const cDia=new Chart(document.getElementById('chartDia'),{
+  type:'bar',
+  data:{labels:DIAS,datasets:[{label:'Total (R$)',data:[],backgroundColor:'#4d9de066',borderColor:'#4d9de0',borderWidth:1,borderRadius:4,hoverBackgroundColor:'#4d9de0'}]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>fmtR(ctx.raw)}}},
+    scales:{x:sx,y:{...sy,ticks:{...sy.ticks,callback:v=>fmtM(v)}}}}
+});
+
+// ═══════════ FILTER LOGIC ═══════════
+function getF(){return{mes:document.getElementById('fMes').value,categoria:catFilt||document.getElementById('fCategoria').value,estado:stFilt||document.getElementById('fEstado').value,produto:document.getElementById('fProduto').value};}
+function fRows(rows,f){return rows.filter(r=>(!f.mes||r.mes===f.mes)&&(!f.categoria||r.categoria===f.categoria)&&(!f.estado||r.estado===f.estado)&&(!f.produto||r.produto===f.produto));}
+function grp(rows,key,val='total'){const m={};rows.forEach(r=>m[r[key]]=(m[r[key]]||0)+r[val]);return m;}
+
+function applyFilters(){
+  const f=getF(), rows=fRows(ROWS,f);
+  const total=rows.reduce((a,r)=>a+r.total,0);
+  const qtd=rows.reduce((a,r)=>a+r.qtd,0);
+
+  // KPIs
+  document.getElementById('kpiTotal').textContent=fmtR(total);
+  document.getElementById('kpiMedia').textContent=rows.length?fmtR(total/rows.length):'—';
+  document.getElementById('kpiQtd').textContent=qtd.toLocaleString('pt-BR');
+  document.getElementById('kpiProd').textContent=new Set(rows.map(r=>r.produto)).size;
+  document.getElementById('kpiReg').textContent=rows.length;
+  document.getElementById('recCount').textContent=rows.length+' registros';
+
+  // MENSAL
+  const byM=grp(rows,'mes'), byMQ=grp(rows,'mes','qtd');
+  cMes.data.datasets[0].data=Object.keys(MESES).map(m=>byM[m]||0);
+  cMes.data.datasets[1].data=Object.keys(MESES).map(m=>byMQ[m]||0);
+  cMes.update('active');
+
+  // ESTADOS
+  const byE=grp(rows,'estado');
+  const estList=Object.entries(byE).sort((a,b)=>b[1]-a[1]);
+  const maxE=estList[0]?.[1]||1;
+  const sl=document.getElementById('stateList');
+  sl.innerHTML='';
+  estList.forEach(([e,v])=>{
+    const pct=(v/maxE*100).toFixed(0);
+    const act=stFilt===e;
+    sl.innerHTML+=`<div class="state-row${act?' active-state':''}" onclick="toggleSt('${e}')">
+      <div class="state-lbl">${e}</div>
+      <div class="state-bar-bg"><div class="state-bar-fill" style="width:${pct}%;background:${act?'#3ecf8e':'#4d9de0'}">
+        <span class="state-val">${fmtM(v)}</span></div></div></div>`;
+  });
+
+  // PRODUTOS
+  const byP=grp(rows,'produto');
+  const top=Object.entries(byP).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  cProd.data.labels=top.map(x=>x[0]);
+  cProd.data.datasets[0].data=top.map(x=>x[1]);
+  cProd.data.datasets[0].backgroundColor=top.map((_,i)=>CP[i%CP.length]+'bb');
+  cProd.data.datasets[0].borderColor=top.map((_,i)=>CP[i%CP.length]);
+  cProd.data.datasets[0].hoverBackgroundColor=top.map((_,i)=>CP[i%CP.length]);
+  cProd.update('active');
+
+  // PIZZA
+  const byC=grp(rows,'categoria');
+  cPizza.data.datasets[0].data=CATS.map(c=>byC[c]||0);
+  cPizza.update('active');
+  renderLeg(CATS.map(c=>byC[c]||0));
+
+  // DIA DA SEMANA
+  cDia.data.datasets[0].data=DIAS.map(d=>rows.length===ROWS.length?DIA_ORIG[d]:Math.round(DIA_ORIG[d]/DIA_TOT*total));
+  cDia.update('active');
+
+  // HEADER + CHIPS
+  const sub=[f.mes&&(MESES[f.mes]||f.mes),f.categoria,f.estado,f.produto].filter(Boolean);
+  document.getElementById('headerSub').textContent=sub.length?'Filtrado por: '+sub.join(' · '):'Período: Dez/2024 – Jun/2025 · Todos os dados';
+  renderChips(f);
+}
+
+function renderLeg(vals){
+  const sum=vals.reduce((a,b)=>a+b,0)||1;
+  document.getElementById('legendCat').innerHTML=CATS.map((c,i)=>{
+    const act=catFilt===c;
+    return`<div class="legend-item${act?' active-cat':''}" onclick="toggleCat('${c}')">
+      <div class="legend-dot" style="background:${CC[i]}"></div>${c} ${(vals[i]/sum*100).toFixed(1)}%</div>`;
+  }).join('');
+}
+
+function renderChips(f){
+  const af=document.getElementById('activeFilters');
+  let html='';
+  if(f.mes) html+=`<div class="chip">Mês: <b>${MESES[f.mes]||f.mes}</b><span class="chip-x" onclick="setDropFilter('fMes','')">✕</span></div>`;
+  if(f.categoria) html+=`<div class="chip">Categoria: <b>${f.categoria}</b><span class="chip-x" onclick="toggleCat('${f.categoria}')">✕</span></div>`;
+  if(f.estado) html+=`<div class="chip">Estado: <b>${f.estado}</b><span class="chip-x" onclick="toggleSt('${f.estado}')">✕</span></div>`;
+  if(f.produto) html+=`<div class="chip">Produto: <b>${f.produto}</b><span class="chip-x" onclick="setDropFilter('fProduto','')">✕</span></div>`;
+  af.innerHTML=html;
+  af.classList.toggle('has-chips',!!html);
+}
+
+function toggleSt(e){stFilt=stFilt===e?null:e;if(stFilt)document.getElementById('fEstado').value='';applyFilters();}
+function toggleCat(c){catFilt=catFilt===c?null:c;if(catFilt)document.getElementById('fCategoria').value='';applyFilters();}
+function setDropFilter(id,val){document.getElementById(id).value=val;if(id==='fCategoria')catFilt=null;if(id==='fEstado')stFilt=null;applyFilters();}
+function clearAll(){['fMes','fCategoria','fEstado','fProduto'].forEach(id=>document.getElementById(id).value='');stFilt=null;catFilt=null;applyFilters();}
+
+applyFilters();
+</script>
+</body>
+</html>
